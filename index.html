@@ -1,0 +1,2534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AetherXR — Spatial Attention & Passive Earning Ecosystem</title>
+
+  <!-- External CDNs: A-Frame 1.6.0, Environment, FontAwesome, Chart.js, Google Fonts -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://unpkg.com/aframe-environment-component@1.3.4/dist/aframe-environment-component.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #080b11;
+      --bg-card: rgba(15, 23, 42, 0.78);
+      --bg-card-hover: rgba(30, 41, 59, 0.85);
+      --border-color: rgba(56, 189, 248, 0.18);
+      --border-color-glow: rgba(56, 189, 248, 0.45);
+      --primary-cyan: #38bdf8;
+      --primary-teal: #14b8a6;
+      --accent-purple: #818cf8;
+      --accent-green: #22c55e;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.55);
+      --blur-strength: blur(14px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      user-select: none;
+    }
+
+    /* 3D A-Frame Scene Container (Always Active in Background) */
+    #vr-viewport {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* 2D Modern Glassmorphic HUD & Application UI */
+    #ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    #ui-overlay.hidden-view {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.98);
+    }
+
+    .interactive {
+      pointer-events: auto;
+    }
+
+    /* Top Navigation Bar */
+    .top-nav {
+      height: 70px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(8, 11, 17, 0.85);
+      backdrop-filter: var(--blur-strength);
+      -webkit-backdrop-filter: var(--blur-strength);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px rgba(14, 165, 233, 0.5);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-badge {
+      font-size: 0.65rem;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--primary-cyan);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-btn.active {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(99, 102, 241, 0.25));
+      color: var(--primary-cyan);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .session-indicator-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: var(--accent-red);
+      transition: all 0.3s ease;
+    }
+
+    .session-indicator-pill.active {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: rgba(34, 197, 94, 0.4);
+      color: var(--accent-green);
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.25);
+    }
+
+    .session-indicator-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: currentColor;
+      box-shadow: 0 0 8px currentColor;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .enter-vr-btn {
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      color: #fff;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35);
+    }
+
+    .enter-vr-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5);
+    }
+
+    /* Main Content Area */
+    .app-main {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Tab Panes */
+    .tab-pane {
+      display: none;
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tab-pane.active-pane {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Metric Grid Cards */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: var(--blur-strength);
+      -webkit-backdrop-filter: var(--blur-strength);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: var(--glass-shadow);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.5), transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .glass-card:hover {
+      border-color: var(--border-color-glow);
+      transform: translateY(-2px);
+    }
+
+    .glass-card:hover::before {
+      opacity: 1;
+    }
+
+    .card-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .card-value {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 4px;
+    }
+
+    .card-subtext {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sub-green { color: var(--accent-green); }
+    .sub-cyan { color: var(--primary-cyan); }
+    .sub-amber { color: var(--accent-amber); }
+    .sub-purple { color: var(--accent-purple); }
+
+    /* Dashboard Layout: 2 Columns */
+    .dashboard-split {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-split {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Controls & Earning Session Toggle */
+    .session-hero-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8));
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 30px -10px rgba(14, 165, 233, 0.25);
+      margin-bottom: 20px;
+    }
+
+    .session-hero-info h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .session-hero-info p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      max-width: 520px;
+      line-height: 1.45;
+    }
+
+    .primary-toggle-btn {
+      background: linear-gradient(135deg, #22c55e, #10b981);
+      color: #fff;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.35);
+      transition: all 0.25s ease;
+    }
+
+    .primary-toggle-btn:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 0 28px rgba(34, 197, 94, 0.55);
+    }
+
+    .primary-toggle-btn.btn-stop {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.35);
+    }
+
+    .primary-toggle-btn.btn-stop:hover {
+      box-shadow: 0 0 28px rgba(239, 68, 68, 0.55);
+    }
+
+    /* Revenue Verticals Switch List */
+    .verticals-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .vertical-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.2s ease;
+    }
+
+    .vertical-row:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .vertical-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .vertical-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .icon-dooh { background: rgba(56, 189, 248, 0.15); color: var(--primary-cyan); }
+    .icon-showcase { background: rgba(129, 140, 248, 0.15); color: var(--accent-purple); }
+    .icon-usability { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); }
+    .icon-ambient { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+
+    .vertical-meta h4 {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 2px;
+    }
+
+    .vertical-meta p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .vertical-rate {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--primary-cyan);
+      margin-right: 14px;
+      background: rgba(56, 189, 248, 0.08);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    /* Switch Component */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--primary-cyan);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Live Activity Log Stream */
+    .live-stream-box {
+      height: 260px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .stream-entry {
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.02);
+      border-left: 3px solid var(--primary-cyan);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      animation: entrySlide 0.25s ease;
+    }
+
+    .stream-entry.audit-pass { border-left-color: var(--accent-green); }
+    .stream-entry.warning { border-left-color: var(--accent-amber); }
+
+    @keyframes entrySlide {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Tables */
+    .styled-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+
+    .styled-table th {
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-dim);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .styled-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+    }
+
+    .styled-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .badge-pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .badge-live { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); border: 1px solid rgba(34, 197, 94, 0.3); }
+    .badge-completed { background: rgba(56, 189, 248, 0.15); color: var(--primary-cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
+    .badge-flagged { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.88rem;
+      transition: border 0.2s ease;
+    }
+
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--primary-cyan);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    }
+
+    .btn-action {
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-action:hover {
+      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* In-VR Floating HUD Control Strip (Visible in bottom right of 2D screen or toggled in VR) */
+    .vr-float-dock {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(8, 11, 17, 0.85);
+      backdrop-filter: var(--blur-strength);
+      border: 1px solid var(--border-color);
+      padding: 8px 16px;
+      border-radius: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      pointer-events: auto;
+    }
+
+    .dock-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    .dock-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .dock-btn.active-dock {
+      color: var(--primary-cyan);
+      background: rgba(56, 189, 248, 0.15);
+    }
+
+    /* Desktop Controls Help Tooltip */
+    .desktop-help-pill {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: var(--blur-strength);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .kbd-key {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.7rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+    }
+
+    /* Modal dialog */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-dialog {
+      width: 90%;
+      max-width: 520px;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 28px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+      animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalPop {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+
+  <!-- A-Frame Custom Component Definitions: Attention Tracking, Interactive Products, Raycasters -->
+  <script>
+    // Global Event Bus & Spatial Telemetry Store
+    window.SpatialTelemetry = {
+      activeBillboards: [],
+      currentDwellTarget: null,
+      dwellStartTime: 0,
+      totalVerifiedDwells: 0,
+      interactiveActions: 0,
+      headMicroMovements: 0,
+      lastHeadRotation: { x: 0, y: 0, z: 0 },
+      lastMovementTime: Date.now(),
+      isHeadsetIdle: false
+    };
+
+    // Component: Spatial Attention & Billboard Dwell Engine (vCPM Verification)
+    AFRAME.registerComponent('spatial-ad-unit', {
+      schema: {
+        campaignId: { type: 'string', default: 'CAMP-001' },
+        campaignName: { type: 'string', default: 'Lucid Motors' },
+        rateCPM: { type: 'number', default: 6.50 }, // $6.50 vCPM
+        minDwellSeconds: { type: 'number', default: 3.0 }
+      },
+
+      init: function () {
+        var el = this.el;
+        var data = this.data;
+        this.isHovered = false;
+        this.dwellDuration = 0;
+
+        el.setAttribute('class', 'clickable');
+
+        // Visual hover feedback
+        el.addEventListener('mouseenter', () => {
+          this.isHovered = true;
+          this.dwellStart = Date.now();
+          window.SpatialTelemetry.currentDwellTarget = data.campaignName;
+          
+          // Animate border glow
+          el.setAttribute('animation__glow', {
+            property: 'material.emissiveIntensity',
+            to: '0.4',
+            dur: 200,
+            easing: 'easeOutQuad'
+          });
+        });
+
+        el.addEventListener('mouseleave', () => {
+          if (this.isHovered && this.dwellStart) {
+            var duration = (Date.now() - this.dwellStart) / 1000;
+            if (duration >= data.minDwellSeconds && window.EcosystemState && window.EcosystemState.sessionActive) {
+              window.EcosystemEngine.recordVerifiedDwell(data.campaignId, data.campaignName, duration, data.rateCPM);
+            }
+          }
+          this.isHovered = false;
+          window.SpatialTelemetry.currentDwellTarget = null;
+          el.setAttribute('animation__glow', {
+            property: 'material.emissiveIntensity',
+            to: '0.05',
+            dur: 200,
+            easing: 'easeOutQuad'
+          });
+        });
+
+        // Click / Trigger interaction
+        el.addEventListener('click', () => {
+          if (window.EcosystemState && window.EcosystemState.sessionActive) {
+            window.EcosystemEngine.recordInteraction(data.campaignId, data.campaignName, 'Billboard Click Through', 0.05);
+          }
+        });
+      },
+
+      tick: function (time, delta) {
+        if (this.isHovered && this.dwellStart) {
+          var liveSeconds = ((Date.now() - this.dwellStart) / 1000).toFixed(1);
+          // Optional in-world HUD indicator updates
+        }
+      }
+    });
+
+    // Component: Interactive 3D Product Pedestal (CPE Verification)
+    AFRAME.registerComponent('interactive-product-showcase', {
+      schema: {
+        campaignId: { type: 'string', default: 'CAMP-002' },
+        productName: { type: 'string', default: 'Quantum Stealth Drone' },
+        interactionReward: { type: 'number', default: 0.15 } // $0.15 per qualifying interaction
+      },
+
+      init: function () {
+        var el = this.el;
+        var data = this.data;
+        this.currentColorIdx = 0;
+        this.colors = ['#38bdf8', '#818cf8', '#22c55e', '#f59e0b', '#ef4444'];
+
+        el.setAttribute('class', 'clickable');
+
+        el.addEventListener('click', () => {
+          // Change product visual state
+          this.currentColorIdx = (this.currentColorIdx + 1) % this.colors.length;
+          var newColor = this.colors[this.currentColorIdx];
+          
+          var targetMesh = el.querySelector('.customizable-part');
+          if (targetMesh) {
+            targetMesh.setAttribute('material', 'color', newColor);
+            targetMesh.setAttribute('material', 'emissive', newColor);
+          }
+
+          // Trigger haptic vibration on Quest controller if active
+          window.triggerQuestHaptics(0.7, 80);
+
+          if (window.EcosystemState && window.EcosystemState.sessionActive) {
+            window.EcosystemEngine.recordInteraction(data.campaignId, data.productName, 'Customizer Config Selected (' + newColor + ')', data.interactionReward);
+          }
+        });
+
+        // Hover spin deceleration/acceleration
+        el.addEventListener('mouseenter', () => {
+          el.setAttribute('animation__spin', {
+            property: 'rotation',
+            to: '0 360 0',
+            loop: true,
+            dur: 4000,
+            easing: 'linear'
+          });
+        });
+
+        el.addEventListener('mouseleave', () => {
+          el.setAttribute('animation__spin', {
+            property: 'rotation',
+            to: '0 360 0',
+            loop: true,
+            dur: 16000,
+            easing: 'linear'
+          });
+        });
+      }
+    });
+
+    // Component: Headset Micro-Movement & Anti-Fraud Telemetry
+    AFRAME.registerComponent('fraud-guard-telemetry', {
+      tick: function () {
+        var rot = this.el.getAttribute('rotation');
+        if (!rot) return;
+
+        var dX = Math.abs(rot.x - window.SpatialTelemetry.lastHeadRotation.x);
+        var dY = Math.abs(rot.y - window.SpatialTelemetry.lastHeadRotation.y);
+        var dZ = Math.abs(rot.z - window.SpatialTelemetry.lastHeadRotation.z);
+        var deltaTotal = dX + dY + dZ;
+
+        if (deltaTotal > 0.08) {
+          window.SpatialTelemetry.lastMovementTime = Date.now();
+          window.SpatialTelemetry.headMicroMovements++;
+          window.SpatialTelemetry.isHeadsetIdle = false;
+        } else {
+          // If no movement for > 25 seconds, mark idle
+          if (Date.now() - window.SpatialTelemetry.lastMovementTime > 25000) {
+            window.SpatialTelemetry.isHeadsetIdle = true;
+          }
+        }
+
+        window.SpatialTelemetry.lastHeadRotation = { x: rot.x, y: rot.y, z: rot.z };
+      }
+    });
+
+    // Helper: Trigger Quest Haptics
+    window.triggerQuestHaptics = function(intensity, durationMs) {
+      if (navigator.getGamepads) {
+        var gamepads = navigator.getGamepads();
+        for (var i = 0; i < gamepads.length; i++) {
+          var gp = gamepads[i];
+          if (gp && gp.hapticActuators && gp.hapticActuators.length > 0) {
+            gp.hapticActuators[0].pulse(intensity, durationMs);
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body>
+
+  <!-- ========================================== -->
+  <!-- 3D WEBXR SCENE (A-FRAME)                   -->
+  <!-- ========================================== -->
+  <div id="vr-viewport">
+    <a-scene 
+      embedded 
+      renderer="antialias: true; colorManagement: true; highRefreshRate: true; foveationLevel: 2;"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false">
+      
+      <!-- Asset Manager -->
+      <a-assets>
+        <!-- Procedural Textures / Canvas Can Be Injected -->
+      </a-assets>
+
+      <!-- Ambient Lighting & Futuristic Cyber Environment -->
+      <a-entity environment="preset: starry; groundColor: #050811; groundColor2: #090e1a; dressing: pillars; dressingColor: #1e293b; dressingAmount: 18; grid: dots; gridColor: #38bdf8; lightPosition: 0 10 5"></a-entity>
+
+      <a-light type="ambient" color="#475569" intensity="0.9"></a-light>
+      <a-light type="directional" position="-2 8 4" intensity="1.2" color="#bae6fd" castShadow="false"></a-light>
+      <a-light type="point" position="0 3 0" intensity="1.5" color="#38bdf8" distance="15"></a-light>
+
+      <!-- Camera Rig with Quest 3S Controllers and Desktop Cursor -->
+      <a-entity id="camera-rig" position="0 0 4">
+        <!-- Main Head Camera with Anti-Fraud Micro-Movement Guard -->
+        <a-camera 
+          id="head-camera" 
+          look-controls="pointerLockEnabled: false" 
+          wasd-controls="acceleration: 25"
+          position="0 1.6 0"
+          fraud-guard-telemetry>
+          
+          <!-- Desktop Raycaster Cursor (Active on Desktop, non-interfering in VR) -->
+          <a-cursor 
+            id="mouse-cursor"
+            raycaster="objects: .clickable; far: 20"
+            fuse="false"
+            cursor="rayOrigin: mouse"
+            material="color: #38bdf8; shader: flat"
+            geometry="primitive: ring; radiusInner: 0.005; radiusOuter: 0.009"
+            position="0 0 -1">
+          </a-cursor>
+
+          <!-- In-VR Floating Financial HUD Pill (Anchored to user's peripheral field) -->
+          <a-entity id="invr-hud" position="0.55 -0.38 -1.1" rotation="-10 -15 0" visible="false">
+            <a-plane width="0.75" height="0.32" material="color: #0f172a; opacity: 0.88; transparent: true; roughness: 0.8" geometry="radius: 0.02">
+              <a-text id="invr-hud-balance" value="$0.0000" position="-0.32 0.08 0.02" color="#38bdf8" width="1.6" font="mozillavr"></a-text>
+              <a-text id="invr-hud-rate" value="Rate: $0.38/hr" position="-0.32 0.01 0.02" color="#94a3b8" width="0.95"></a-text>
+              <a-text id="invr-hud-status" value="STATUS: EARNING ACTIVE" position="-0.32 -0.07 0.02" color="#22c55e" width="0.85"></a-text>
+            </a-plane>
+          </a-entity>
+        </a-camera>
+
+        <!-- Meta Quest 3S Right Controller (Laser Raycaster & Trigger) -->
+        <a-entity 
+          id="quest-right-hand"
+          laser-controls="hand: right"
+          raycaster="objects: .clickable; far: 18; lineColor: #38bdf8; lineOpacity: 0.75"
+          line="color: #38bdf8; opacity: 0.75">
+        </a-entity>
+
+        <!-- Meta Quest 3S Left Controller -->
+        <a-entity 
+          id="quest-left-hand"
+          laser-controls="hand: left"
+          raycaster="objects: .clickable; far: 18; lineColor: #818cf8; lineOpacity: 0.65"
+          line="color: #818cf8; opacity: 0.65">
+        </a-entity>
+      </a-entity>
+
+      <!-- ======================================================= -->
+      <!-- MONETIZATION VERTICAL 1: SPATIAL DOOH BILLBOARDS (vCPM) -->
+      <!-- ======================================================= -->
+      <a-entity id="billboard-monolith-left" position="-5.5 3.5 -4" rotation="0 32 0">
+        <!-- Main Bezel Frame -->
+        <a-box width="5.2" height="3.2" depth="0.25" material="color: #0b132b; metalness: 0.7; roughness: 0.3"></a-box>
+        <!-- Outer Glow Trim -->
+        <a-plane width="5.3" height="3.3" position="0 0 0.13" material="color: #38bdf8; emissive: #38bdf8; emissiveIntensity: 0.15; opacity: 0.4; transparent: true"></a-plane>
+        
+        <!-- Interactive Ad Surface with Attention Verification Engine -->
+        <a-plane 
+          id="ad-surface-1" 
+          class="clickable"
+          position="0 0 0.14" 
+          width="4.9" 
+          height="2.9" 
+          material="color: #0f172a; emissive: #0ea5e9; emissiveIntensity: 0.05"
+          spatial-ad-unit="campaignId: CAMP-LUCID-01; campaignName: Lucid Air Sapphire EV; rateCPM: 7.20; minDwellSeconds: 3.0">
+          
+          <a-text value="LUCID MOTORS // SAPPHIRE" position="-2.1 1.05 0.02" color="#38bdf8" width="6.5" font="mozillavr"></a-text>
+          <a-text value="Pure Electric Super-Sports Luxury. 1,234 hp." position="-2.1 0.65 0.02" color="#e2e8f0" width="4.0"></a-text>
+          
+          <!-- Virtual 3D Minimal Silhouette Car Representation -->
+          <a-entity position="0 -0.2 0.3" rotation="0 -25 0">
+            <a-box width="2.2" height="0.45" depth="1.0" material="color: #0284c7; metalness: 0.9; roughness: 0.2"></a-box>
+            <a-box position="0 0.35 0" width="1.3" height="0.38" depth="0.85" material="color: #0f172a; opacity: 0.85; transparent: true"></a-box>
+          </a-entity>
+
+          <a-plane position="0 -1.0 0.02" width="4.5" height="0.4" material="color: #0369a1; opacity: 0.85">
+            <a-text value="[VERIFIED SPATIAL IMPRESSION ACTIVE - DWELL TO EARN]" align="center" color="#ffffff" width="3.4"></a-text>
+          </a-plane>
+        </a-plane>
+        
+        <!-- Base Pylon -->
+        <a-cylinder position="0 -2.6 0" radius="0.25" height="2.2" material="color: #1e293b; metalness: 0.8"></a-cylinder>
+      </a-entity>
+
+      <!-- Second Billboard: Sony Spatial Audio -->
+      <a-entity id="billboard-monolith-right" position="5.5 3.5 -4" rotation="0 -32 0">
+        <a-box width="5.2" height="3.2" depth="0.25" material="color: #0b132b; metalness: 0.7; roughness: 0.3"></a-box>
+        <a-plane width="5.3" height="3.3" position="0 0 0.13" material="color: #818cf8; emissive: #818cf8; emissiveIntensity: 0.15; opacity: 0.4; transparent: true"></a-plane>
+        
+        <a-plane 
+          id="ad-surface-2" 
+          class="clickable"
+          position="0 0 0.14" 
+          width="4.9" 
+          height="2.9" 
+          material="color: #0f172a; emissive: #6366f1; emissiveIntensity: 0.05"
+          spatial-ad-unit="campaignId: CAMP-SONY-02; campaignName: Sony 360 Reality Audio; rateCPM: 6.80; minDwellSeconds: 3.0">
+          
+          <a-text value="SONY // 360 SPATIAL AUDIO" position="-2.1 1.05 0.02" color="#818cf8" width="6.5" font="mozillavr"></a-text>
+          <a-text value="Immerse in True Spatial Acoustics. Built for WebXR." position="-2.1 0.65 0.02" color="#e2e8f0" width="4.0"></a-text>
+          
+          <!-- Virtual Headphone Silhouette -->
+          <a-torus position="0 -0.15 0.3" radius="0.55" radius-tubular="0.06" arc="180" rotation="0 0 0" material="color: #818cf8; metalness: 0.8"></a-torus>
+          <a-sphere position="-0.55 -0.15 0.3" radius="0.18" material="color: #1e1b4b"></a-sphere>
+          <a-sphere position="0.55 -0.15 0.3" radius="0.18" material="color: #1e1b4b"></a-sphere>
+
+          <a-plane position="0 -1.0 0.02" width="4.5" height="0.4" material="color: #4f46e5; opacity: 0.85">
+            <a-text value="[INTERACT OR DWELL - EARNING vCPM SHARE]" align="center" color="#ffffff" width="3.4"></a-text>
+          </a-plane>
+        </a-plane>
+        
+        <a-cylinder position="0 -2.6 0" radius="0.25" height="2.2" material="color: #1e293b; metalness: 0.8"></a-cylinder>
+      </a-entity>
+
+      <!-- ======================================================= -->
+      <!-- MONETIZATION VERTICAL 2: 3D PRODUCT SHOWCASE PEDESTAL   -->
+      <!-- ======================================================= -->
+      <a-entity id="product-showcase-center" position="0 0 -2.8">
+        <!-- Illuminated Hexagonal Stage Base -->
+        <a-cylinder radius="1.3" height="0.3" segments-radial="8" material="color: #0f172a; metalness: 0.6; roughness: 0.4"></a-cylinder>
+        <a-ring position="0 0.16 0" rotation="-90 0 0" radius-inner="1.0" radius-outer="1.25" material="color: #22c55e; emissive: #22c55e; emissiveIntensity: 0.5"></a-ring>
+
+        <!-- 3D Holographic Showcase Object with Interactive Color/Config Switch -->
+        <a-entity 
+          id="showcase-drone-model"
+          position="0 1.1 0" 
+          rotation="0 0 0"
+          animation__spin="property: rotation; to: 0 360 0; loop: true; dur: 16000; easing: linear"
+          interactive-product-showcase="campaignId: CAMP-AERO-03; productName: AeroSpace X-1 Prototype; interactionReward: 0.15">
+          
+          <!-- Central Fuselage -->
+          <a-cylinder class="customizable-part clickable" radius="0.25" height="0.6" rotation="90 0 0" material="color: #38bdf8; metalness: 0.85; roughness: 0.15; emissive: #38bdf8; emissiveIntensity: 0.2"></a-cylinder>
+          <!-- Cockpit Dome -->
+          <a-sphere position="0 0.15 -0.2" radius="0.18" material="color: #0284c7; opacity: 0.7; transparent: true"></a-sphere>
+          <!-- Left Wing & Thruster -->
+          <a-box position="-0.65 0 0.1" width="0.9" height="0.04" depth="0.35" rotation="0 15 -5" material="color: #1e293b"></a-box>
+          <a-cylinder position="-1.1 0 0.1" radius="0.09" height="0.4" rotation="90 0 0" material="color: #22c55e; emissive: #22c55e; emissiveIntensity: 0.6"></a-cylinder>
+          <!-- Right Wing & Thruster -->
+          <a-box position="0.65 0 0.1" width="0.9" height="0.04" depth="0.35" rotation="0 -15 5" material="color: #1e293b"></a-box>
+          <a-cylinder position="1.1 0 0.1" radius="0.09" height="0.4" rotation="90 0 0" material="color: #22c55e; emissive: #22c55e; emissiveIntensity: 0.6"></a-cylinder>
+        </a-entity>
+
+        <!-- Pedestal Floating Floating Information Signboard -->
+        <a-plane position="0 0.6 0.9" rotation="-30 0 0" width="1.6" height="0.5" material="color: #0b132b; opacity: 0.9; transparent: true" geometry="radius: 0.02">
+          <a-text value="3D SHOWCASE // CLICK TO CONFIGURE" align="center" position="0 0.12 0.02" color="#22c55e" width="2.2" font="mozillavr"></a-text>
+          <a-text value="CPE Payout: +$0.15 per verified interaction" align="center" position="0 -0.08 0.02" color="#94a3b8" width="1.6"></a-text>
+        </a-plane>
+      </a-entity>
+
+      <!-- ======================================================= -->
+      <!-- MONETIZATION VERTICAL 3: SPATIAL USABILITY BENCHMARK    -->
+      <!-- ======================================================= -->
+      <a-entity id="usability-benchmark-station" position="0 2.2 4.5" rotation="0 180 0">
+        <a-plane width="3.4" height="2.2" material="color: #0f172a; opacity: 0.92; transparent: true">
+          <a-text value="RESEARCH PORTAL: USABILITY BENCHMARK" position="-1.5 0.8 0.02" color="#a855f7" width="4.5" font="mozillavr"></a-text>
+          <a-text value="Voluntary 30s WebXR latency & controller telemetry study." position="-1.5 0.5 0.02" color="#cbd5e1" width="2.8"></a-text>
+          
+          <a-plane id="btn-start-usability" class="clickable" position="0 -0.3 0.03" width="2.4" height="0.5" material="color: #9333ea">
+            <a-text value="[CLICK TO BEGIN TASK - REWARD $1.25]" align="center" color="#ffffff" width="3.0"></a-text>
+          </a-plane>
+        </a-plane>
+      </a-entity>
+
+      <!-- Floor Boundary Grid & Architectural Pillars -->
+      <a-circle radius="18" rotation="-90 0 0" material="color: #080c17; roughness: 0.9; metalness: 0.2"></a-circle>
+      <a-ring radius-inner="17.8" radius-outer="18.0" rotation="-90 0 0" material="color: #38bdf8; emissive: #38bdf8; emissiveIntensity: 0.4"></a-ring>
+    </a-scene>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2D RESPONSIVE FINANCIAL WEB ECOSYSTEM UI   -->
+  <!-- ========================================== -->
+  <div id="ui-overlay" class="interactive">
+    
+    <!-- Top Navigation Bar -->
+    <header class="top-nav">
+      <div class="brand-logo" onclick="window.EcosystemUI.switchTab('tab-owner')">
+        <div class="brand-icon">
+          <i class="fa-solid fa-cube text-white"></i>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="brand-title">AetherXR</span>
+            <span class="brand-badge">PROTOCOL v2.4</span>
+          </div>
+          <p style="font-size: 0.68rem; color: var(--text-dim); margin-top: -2px;">Spatial Attention & Decentralized Yield Network</p>
+        </div>
+      </div>
+
+      <!-- Navigation Switcher for 3 Roles: Headset Owner, Advertiser, Admin -->
+      <nav class="nav-tabs">
+        <button class="nav-btn active" id="btn-tab-owner" onclick="window.EcosystemUI.switchTab('tab-owner')">
+          <i class="fa-solid fa-vr-cardboard"></i> Headset Owner
+        </button>
+        <button class="nav-btn" id="btn-tab-advertiser" onclick="window.EcosystemUI.switchTab('tab-advertiser')">
+          <i class="fa-solid fa-bullhorn"></i> Brand Studio
+        </button>
+        <button class="nav-btn" id="btn-tab-admin" onclick="window.EcosystemUI.switchTab('tab-admin')">
+          <i class="fa-solid fa-shield-halved"></i> Governance & Fraud
+        </button>
+        <button class="nav-btn" id="btn-tab-wallet" onclick="window.EcosystemUI.switchTab('tab-wallet')">
+          <i class="fa-solid fa-wallet"></i> Payout Vault
+        </button>
+        <button class="nav-btn" id="btn-tab-privacy" onclick="window.EcosystemUI.switchTab('tab-privacy')">
+          <i class="fa-solid fa-user-lock"></i> Privacy Architecture
+        </button>
+      </nav>
+
+      <!-- Action Area: Session Status + Mode Switcher -->
+      <div class="nav-actions">
+        <div id="session-status-badge" class="session-indicator-pill">
+          <span class="session-indicator-dot"></span>
+          <span id="session-status-text">OFFLINE</span>
+        </div>
+
+        <!-- In-VR Immersion Mode Toggle Button -->
+        <button class="enter-vr-btn" onclick="window.EcosystemUI.toggleVRMode()">
+          <i class="fa-solid fa-glasses"></i>
+          <span id="btn-vr-label">Immerse 3D View</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Dynamic Container -->
+    <main class="app-main">
+
+      <!-- ============================================================== -->
+      <!-- TAB 1: HEADSET OWNER EARNING DASHBOARD                         -->
+      <!-- ============================================================== -->
+      <div id="tab-owner" class="tab-pane active-pane">
+        
+        <!-- Hero Session Control Banner -->
+        <div class="session-hero-panel">
+          <div class="session-hero-info">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom: 4px;">
+              <span class="badge-pill badge-live">QUEST 3S COMPATIBLE</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">DEVICE ID: QUEST-XR-8812</span>
+            </div>
+            <h2>Universal Spatial Earning Session</h2>
+            <p>
+              Activate transparent, non-intrusive monetization. Earn a direct 70% revenue share from spatial DOOH billboards, interactive 3D product configurations, and voluntary usability studies while exploring WebXR.
+            </p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+            <button id="main-session-toggle-btn" class="primary-toggle-btn" onclick="window.EcosystemEngine.toggleSession()">
+              <i class="fa-solid fa-play"></i> Start Earning Session
+            </button>
+            <span id="session-quality-metric" style="font-size: 0.76rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+              Session Quality Score: <strong style="color: var(--accent-green);">100%</strong> (Active Gaze/Frustum Verified)
+            </span>
+          </div>
+        </div>
+
+        <!-- Metric Stat Cards -->
+        <div class="metrics-grid">
+          <div class="glass-card">
+            <div class="card-label">
+              <span>Instant Yield Rate</span>
+              <i class="fa-solid fa-bolt sub-cyan"></i>
+            </div>
+            <div class="card-value" id="val-yield-rate">$0.38<span style="font-size: 0.95rem; color: var(--text-dim);">/hr</span></div>
+            <div class="card-subtext sub-cyan">
+              <i class="fa-solid fa-arrow-trend-up"></i> Dynamic real-time vCPM matching
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label">
+              <span>Current Session Payout</span>
+              <i class="fa-solid fa-stopwatch sub-green"></i>
+            </div>
+            <div class="card-value sub-green" id="val-session-earned">$0.0000</div>
+            <div class="card-subtext" id="val-session-time">
+              <i class="fa-regular fa-clock"></i> 00:00:00 elapsed
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label">
+              <span>Confirmed Available</span>
+              <i class="fa-solid fa-circle-check sub-green"></i>
+            </div>
+            <div class="card-value" id="val-confirmed-balance">$14.8250</div>
+            <div class="card-subtext sub-green">
+              <i class="fa-solid fa-shield"></i> Ready for instant cashout
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label">
+              <span>Pending Audit Balance</span>
+              <i class="fa-solid fa-hourglass-half sub-amber"></i>
+            </div>
+            <div class="card-value sub-amber" id="val-pending-balance">$3.2500</div>
+            <div class="card-subtext sub-amber">
+              <i class="fa-solid fa-clock-rotate-left"></i> Verified within 120s
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label">
+              <span>Lifetime Revenue</span>
+              <i class="fa-solid fa-chart-line sub-purple"></i>
+            </div>
+            <div class="card-value" id="val-lifetime-earned">$148.60</div>
+            <div class="card-subtext sub-purple">
+              <i class="fa-solid fa-user-check"></i> 70% net user attribution
+            </div>
+          </div>
+        </div>
+
+        <!-- Split Grid: Monetization Channels & Live Verification Stream -->
+        <div class="dashboard-split">
+          
+          <!-- Column A: Monetization Verticals Toggles -->
+          <div class="glass-card">
+            <div class="section-title">
+              <span>Active Earning Channels</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Tailor user consent & experience</span>
+            </div>
+
+            <div class="verticals-list">
+              <!-- Channel 1: DOOH Billboards -->
+              <div class="vertical-row">
+                <div class="vertical-info">
+                  <div class="vertical-icon icon-dooh"><i class="fa-solid fa-panorama"></i></div>
+                  <div class="vertical-meta">
+                    <h4>Spatial Digital Billboards (vCPM)</h4>
+                    <p>Passive dwell earnings while viewing ambient sponsored architecture.</p>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                  <span class="vertical-rate">$5.00 - $8.50 vCPM</span>
+                  <label class="switch">
+                    <input type="checkbox" id="toggle-ch-billboard" checked onchange="window.EcosystemEngine.updateChannelPref()">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Channel 2: 3D Product Demos -->
+              <div class="vertical-row">
+                <div class="vertical-info">
+                  <div class="vertical-icon icon-showcase"><i class="fa-solid fa-cube"></i></div>
+                  <div class="vertical-meta">
+                    <h4>Interactive 3D Product Showcases (CPE)</h4>
+                    <p>Examine and customize interactive 3D models (automotive, tech gadgets).</p>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                  <span class="vertical-rate">$0.10 - $0.35 / Action</span>
+                  <label class="switch">
+                    <input type="checkbox" id="toggle-ch-showcase" checked onchange="window.EcosystemEngine.updateChannelPref()">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Channel 3: Usability Benchmarking -->
+              <div class="vertical-row">
+                <div class="vertical-info">
+                  <div class="vertical-icon icon-usability"><i class="fa-solid fa-vial-circle-check"></i></div>
+                  <div class="vertical-meta">
+                    <h4>Voluntary VR Usability Studies (CPU)</h4>
+                    <p>Structured 2-minute tasks evaluating spatial ergonomics & framerates.</p>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                  <span class="vertical-rate">$1.00 - $3.00 / Task</span>
+                  <label class="switch">
+                    <input type="checkbox" id="toggle-ch-usability" checked onchange="window.EcosystemEngine.updateChannelPref()">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Channel 4: Ambient Sponsored Lounges -->
+              <div class="vertical-row">
+                <div class="vertical-info">
+                  <div class="vertical-icon icon-ambient"><i class="fa-solid fa-mug-saucer"></i></div>
+                  <div class="vertical-meta">
+                    <h4>Sponsored Spatial Lounges (CPAH)</h4>
+                    <p>Co-working, lo-fi study, and relaxation environments funded by enterprise partners.</p>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                  <span class="vertical-rate">$0.20 - $0.45 / Hour</span>
+                  <label class="switch">
+                    <input type="checkbox" id="toggle-ch-ambient" checked onchange="window.EcosystemEngine.updateChannelPref()">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Transparency Guarantee Note -->
+            <div style="margin-top: 18px; padding: 12px; background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-circle-info sub-cyan" style="font-size: 1.1rem;"></i>
+              <span><strong>Economics Disclaimer:</strong> Headset ownership does not mint money magically. You are compensated solely when verified corporate campaign budgets match your active spatial viewability.</span>
+            </div>
+          </div>
+
+          <!-- Column B: Real-Time Verification & Audit Ledger Stream -->
+          <div class="glass-card">
+            <div class="section-title">
+              <span>Live Verification Stream</span>
+              <span class="badge-pill badge-live" id="stream-pulse-badge">STREAM ACTIVE</span>
+            </div>
+
+            <div class="live-stream-box" id="live-activity-stream">
+              <!-- Injected dynamically via JS -->
+              <div class="stream-entry audit-pass">
+                <span>[INIT] WebXR Session Connected (Quest Browser 32.1 / Chromium 124)</span>
+                <span class="sub-cyan">0.00ms</span>
+              </div>
+              <div class="stream-entry">
+                <span>[SECURITY] Zero-Biometric WebXR sandbox verified. Camera access blocked.</span>
+                <span class="sub-green">PASS</span>
+              </div>
+              <div class="stream-entry">
+                <span>[CAMPAIGN] Matched sponsor: Lucid Motors Air Sapphire vCPM ($7.20)</span>
+                <span class="sub-purple">MATCH</span>
+              </div>
+              <div class="stream-entry">
+                <span>[TELEMETRY] Frustum intersection verified within 45° central view cone</span>
+                <span class="sub-cyan">OK</span>
+              </div>
+            </div>
+
+            <!-- Session Controls Quick Summary -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 0.78rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">
+              <span>70% User / 30% Platform Protocol Fee</span>
+              <span>Audit Latency: 1.2s</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- TAB 2: ENTERPRISE BRAND STUDIO (ADVERTISER DASHBOARD)          -->
+      <!-- ============================================================== -->
+      <div id="tab-advertiser" class="tab-pane">
+        <div class="session-hero-panel" style="background: linear-gradient(135deg, rgba(30, 27, 75, 0.9), rgba(15, 23, 42, 0.9));">
+          <div class="session-hero-info">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom: 4px;">
+              <span class="badge-pill badge-live" style="background: rgba(129, 140, 248, 0.2); color: var(--accent-purple); border-color: rgba(129, 140, 248, 0.4);">ENTERPRISE PORTAL</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">ORG: GLOBAL MEDIA PARTNERS</span>
+            </div>
+            <h2>Spatial Attention & 3D Interactive Campaigns</h2>
+            <p>Deploy measurable, privacy-preserving brand placements across the global WebXR headset owner network. Verify true spatial dwell, high-fidelity interaction, and brand recall without invasive cookies or biometric tracking.</p>
+          </div>
+          <button class="btn-action" onclick="window.EcosystemUI.openCreateCampaignModal()">
+            <i class="fa-solid fa-plus"></i> Create New Campaign
+          </button>
+        </div>
+
+        <!-- Advertiser Summary Metrics -->
+        <div class="metrics-grid">
+          <div class="glass-card">
+            <div class="card-label"><span>Active Campaigns</span><i class="fa-solid fa-bullhorn sub-purple"></i></div>
+            <div class="card-value" id="adv-active-campaigns">4</div>
+            <div class="card-subtext sub-purple">Delivering across Quest 3S & PCVR</div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label"><span>Verified Spatial Impressions</span><i class="fa-solid fa-eye sub-cyan"></i></div>
+            <div class="card-value" id="adv-impressions">42,850</div>
+            <div class="card-subtext sub-cyan"><i class="fa-solid fa-check-double"></i> Avg Dwell: 5.4s in 60° view cone</div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label"><span>Interactive Engagements</span><i class="fa-solid fa-hand-pointer sub-green"></i></div>
+            <div class="card-value" id="adv-engagements">6,420</div>
+            <div class="card-subtext sub-green">14.9% Interactive CTR (3D Model touches)</div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label"><span>Total Campaign Spend</span><i class="fa-solid fa-receipt sub-amber"></i></div>
+            <div class="card-value" id="adv-spend">$482.50</div>
+            <div class="card-subtext sub-amber">Remaining Escrow Budget: $1,517.50</div>
+          </div>
+        </div>
+
+        <!-- Active Campaigns Table -->
+        <div class="glass-card" style="margin-bottom: 20px;">
+          <div class="section-title">
+            <span>Corporate Campaign Performance Table</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Live Attributed Real-Time Billing</span>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="styled-table" id="campaigns-table">
+              <thead>
+                <tr>
+                  <th>Campaign ID</th>
+                  <th>Brand Sponsor</th>
+                  <th>Format / Vertical</th>
+                  <th>Pricing Model</th>
+                  <th>Escrow Budget</th>
+                  <th>Delivered Impressions</th>
+                  <th>Verified Spend</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="campaigns-table-body">
+                <!-- Dynamically populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Analytics Chart -->
+        <div class="glass-card">
+          <div class="section-title">
+            <span>Spatial Viewability & Dwell Distribution (Seconds in Frustum)</span>
+            <span style="font-size: 0.75rem; color: var(--text-dim);">IAB VR/AR Ad Measurement Compliant</span>
+          </div>
+          <div style="height: 240px; position: relative;">
+            <canvas id="advertiserChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- TAB 3: PLATFORM GOVERNANCE & FRAUD DETECTION (ADMIN DASHBOARD) -->
+      <!-- ============================================================== -->
+      <div id="tab-admin" class="tab-pane">
+        <div class="session-hero-panel" style="background: linear-gradient(135deg, rgba(4, 47, 46, 0.9), rgba(15, 23, 42, 0.9));">
+          <div class="session-hero-info">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom: 4px;">
+              <span class="badge-pill badge-live" style="background: rgba(20, 184, 166, 0.2); color: var(--primary-teal); border-color: rgba(20, 184, 166, 0.4);">PROTOCOL GOVERNANCE</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">SECURITY TIER 1</span>
+            </div>
+            <h2>Ecosystem Health, Anti-Sybil & Revenue Splits</h2>
+            <p>Ensure network integrity. Detect headless browser bots, motionless headsets, and fraudulent click scripts. Regulate the transparent 70/30 commission structure and automated advertiser escrow audits.</p>
+          </div>
+          <button class="btn-action" style="background: linear-gradient(135deg, #14b8a6, #0d9488);" onclick="window.EcosystemEngine.runSystemAudit()">
+            <i class="fa-solid fa-arrows-rotate"></i> Run Integrity Audit
+          </button>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="glass-card">
+            <div class="card-label"><span>Gross Network Volume (GMV)</span><i class="fa-solid fa-coins sub-cyan"></i></div>
+            <div class="card-value" id="admin-gmv">$1,285.40</div>
+            <div class="card-subtext sub-cyan">Total corporate ad dollars cleared</div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label"><span>Platform Protocol Revenue (30%)</span><i class="fa-solid fa-building-columns sub-green"></i></div>
+            <div class="card-value sub-green" id="admin-platform-rev">$385.62</div>
+            <div class="card-subtext sub-green">Sustains WebXR infrastructure & servers</div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label"><span>User Yield Distributed (70%)</span><i class="fa-solid fa-users sub-purple"></i></div>
+            <div class="card-value sub-purple" id="admin-user-rev">$899.78</div>
+            <div class="card-subtext sub-purple">Directly credited to verified headset owners</div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label"><span>Fraud Drop Rate</span><i class="fa-solid fa-ban sub-amber"></i></div>
+            <div class="card-value sub-amber" id="admin-fraud-rate">4.8%</div>
+            <div class="card-subtext sub-amber">Idle / motionless bot sessions rejected</div>
+          </div>
+        </div>
+
+        <!-- Fraud Prevention & Sybil Guard Status -->
+        <div class="dashboard-split">
+          <div class="glass-card">
+            <div class="section-title">
+              <span>Anti-Fraud & Human Presence Verification Matrix</span>
+              <span class="badge-pill badge-live">LIVE GUARD</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div style="padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                  <strong style="font-size: 0.85rem;">Headset Micro-Jitter & Vestibular Involuntary Motion</strong>
+                  <span class="sub-green" style="font-size: 0.8rem; font-weight: 700;"><i class="fa-solid fa-check"></i> NORMAL</span>
+                </div>
+                <p style="font-size: 0.74rem; color: var(--text-muted);">Validates natural human physiological micro-movements (~0.5° - 1.5° jitter/sec) to identify headsets abandoned on tables or simulated by synthetic software drivers.</p>
+              </div>
+
+              <div style="padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                  <strong style="font-size: 0.85rem;">Tab Visibility & WebXR Display Sync</strong>
+                  <span class="sub-green" style="font-size: 0.8rem; font-weight: 700;"><i class="fa-solid fa-check"></i> SYNCHRONIZED</span>
+                </div>
+                <p style="font-size: 0.74rem; color: var(--text-muted);">Detects minimized browser tabs, headless Chromium instances, or multi-tab bot farms. Earning stops immediately when window focus drops.</p>
+              </div>
+
+              <div style="padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                  <strong style="font-size: 0.85rem;">View-Cone Frustum Ray-Check</strong>
+                  <span class="sub-cyan" style="font-size: 0.8rem; font-weight: 700;"><i class="fa-solid fa-compass"></i> ACTIVE (60° CONE)</span>
+                </div>
+                <p style="font-size: 0.74rem; color: var(--text-muted);">Sponsors are only charged if the 3D asset occupies at least 15% of the central viewport for >= 3 contiguous seconds with no occluding virtual geometry.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="section-title">
+              <span>Protocol Revenue & Commission Distribution</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim);">Live Settlement Split</span>
+            </div>
+            <div style="height: 240px; position: relative;">
+              <canvas id="adminRevenueChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- TAB 4: DEMONSTRATION WALLET & PAYOUT VAULT                     -->
+      <!-- ============================================================== -->
+      <div id="tab-wallet" class="tab-pane">
+        <div class="session-hero-panel" style="background: linear-gradient(135deg, rgba(20, 83, 45, 0.9), rgba(15, 23, 42, 0.9));">
+          <div class="session-hero-info">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom: 4px;">
+              <span class="badge-pill badge-live" style="background: rgba(34, 197, 94, 0.2); color: var(--accent-green); border-color: rgba(34, 197, 94, 0.4);">VAULT LEDGER</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">SETTLEMENT: INSTANT ACH / USDC</span>
+            </div>
+            <h2>Transparent Headset Earnings Vault</h2>
+            <p>Access your verifiable balance. In this live demonstration environment, transactions are processed against an escrow simulation with exact mathematical attribution. Review cryptographic ledger hashes and cashout workflows.</p>
+          </div>
+          <button class="btn-action" style="background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="window.EcosystemUI.openWithdrawModal()">
+            <i class="fa-solid fa-paper-plane"></i> Request Payout
+          </button>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="glass-card">
+            <div class="card-label"><span>Settled Fiat Balance</span><i class="fa-solid fa-wallet sub-green"></i></div>
+            <div class="card-value sub-green" id="wallet-settled-balance">$14.82</div>
+            <div class="card-subtext sub-green">Cleared past 120-second audit buffer</div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label"><span>Pending Verification</span><i class="fa-solid fa-clock-rotate-left sub-amber"></i></div>
+            <div class="card-value sub-amber" id="wallet-pending-balance">$3.25</div>
+            <div class="card-subtext sub-amber">Awaiting advertiser escrow clearance</div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label"><span>Total Payouts Completed</span><i class="fa-solid fa-circle-check sub-cyan"></i></div>
+            <div class="card-value" id="wallet-paid-balance">$130.50</div>
+            <div class="card-subtext sub-cyan">Disbursed to Stripe / Bank Account</div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-label"><span>Platform Minimum Threshold</span><i class="fa-solid fa-tag sub-purple"></i></div>
+            <div class="card-value sub-purple">$5.00</div>
+            <div class="card-subtext sub-purple">No gas or transfer fees deducted</div>
+          </div>
+        </div>
+
+        <!-- Ledger History -->
+        <div class="glass-card">
+          <div class="section-title">
+            <span>Cryptographic Verification Ledger (Simulated Immutable Log)</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Hash-Chained Attribution Records</span>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="styled-table" id="transactions-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Ledger Hash</th>
+                  <th>Monetization Source</th>
+                  <th>Verification Metric</th>
+                  <th>Gross Advertiser Escrow</th>
+                  <th>Platform Fee (30%)</th>
+                  <th>Net User Yield (70%)</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="transactions-table-body">
+                <!-- Dynamically populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- TAB 5: PRIVACY, ETHICS & ZERO-BIOMETRIC ARCHITECTURE           -->
+      <!-- ============================================================== -->
+      <div id="tab-privacy" class="tab-pane">
+        <div class="session-hero-panel" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));">
+          <div class="session-hero-info">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom: 4px;">
+              <span class="badge-pill badge-live" style="background: rgba(56, 189, 248, 0.2); color: var(--primary-cyan); border-color: rgba(56, 189, 248, 0.4);">PRIVACY FIRST</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">W3C WEBXR PRIVACY SPEC</span>
+            </div>
+            <h2>Ethical Spatial Computing Architecture</h2>
+            <p>AetherXR is architected strictly under zero-knowledge and zero-biometric constraints. We never access headset cameras, microphones, or raw iris data. Here is our verifiable technical breakdown of what is measured vs. what is strictly blocked.</p>
+          </div>
+        </div>
+
+        <div class="dashboard-split">
+          <!-- What We Collect & Why -->
+          <div class="glass-card">
+            <div class="section-title">
+              <span class="sub-cyan"><i class="fa-solid fa-circle-check"></i> What We Access (Legitimate Spatial Telemetry)</span>
+            </div>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px; font-size: 0.85rem; color: var(--text-muted);">
+              <li style="display: flex; gap: 10px; align-items: flex-start;">
+                <i class="fa-solid fa-check sub-green" style="margin-top: 3px;"></i>
+                <div>
+                  <strong style="color: #fff;">Head Rig Rigid Transform (Orientation Vector)</strong>
+                  <p style="font-size: 0.78rem;">Calculates whether the sponsored virtual object is positioned within the standard 60-degree central field-of-view.</p>
+                </div>
+              </li>
+              <li style="display: flex; gap: 10px; align-items: flex-start;">
+                <i class="fa-solid fa-check sub-green" style="margin-top: 3px;"></i>
+                <div>
+                  <strong style="color: #fff;">Raycaster Controller Click Events</strong>
+                  <p style="font-size: 0.78rem;">Registers voluntary user clicks on 3D objects (e.g. changing the color of the showcase drone).</p>
+                </div>
+              </li>
+              <li style="display: flex; gap: 10px; align-items: flex-start;">
+                <i class="fa-solid fa-check sub-green" style="margin-top: 3px;"></i>
+                <div>
+                  <strong style="color: #fff;">Session Timestamp & Browser Active Window State</strong>
+                  <p style="font-size: 0.78rem;">Tracks contiguous active session duration to prevent automated background tab farming.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- What We NEVER Access -->
+          <div class="glass-card">
+            <div class="section-title">
+              <span class="sub-green" style="color: var(--accent-red);"><i class="fa-solid fa-ban"></i> What We NEVER Access (Strictly Prohibited)</span>
+            </div>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px; font-size: 0.85rem; color: var(--text-muted);">
+              <li style="display: flex; gap: 10px; align-items: flex-start;">
+                <i class="fa-solid fa-xmark" style="color: var(--accent-red); margin-top: 3px;"></i>
+                <div>
+                  <strong style="color: #fff;">Passthrough Cameras or Room Scans</strong>
+                  <p style="font-size: 0.78rem;">WebXR standards sandbox cameras entirely. Web applications have 0% access to your physical living room.</p>
+                </div>
+              </li>
+              <li style="display: flex; gap: 10px; align-items: flex-start;">
+                <i class="fa-solid fa-xmark" style="color: var(--accent-red); margin-top: 3px;"></i>
+                <div>
+                  <strong style="color: #fff;">Microphone or Ambient Audio</strong>
+                  <p style="font-size: 0.78rem;">No audio recording or voice telemetry is ever requested, captured, or transmitted.</p>
+                </div>
+              </li>
+              <li style="display: flex; gap: 10px; align-items: flex-start;">
+                <i class="fa-solid fa-xmark" style="color: var(--accent-red); margin-top: 3px;"></i>
+                <div>
+                  <strong style="color: #fff;">Raw Eye-Tracking / Biometric Pupilometry</strong>
+                  <p style="font-size: 0.78rem;">We reject intrusive iris surveillance. Attention is estimated solely via coarse head orientation.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Privacy Assurance Banner -->
+        <div class="glass-card" style="margin-top: 20px; border-color: rgba(34, 197, 94, 0.3);">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <h3 style="font-size: 1.05rem; margin-bottom: 4px; color: #fff;">Download Your Complete Telemetry History</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted);">GDPR / CCPA Article 15 Compliance. Export all verified session logs as structured JSON at any time.</p>
+            </div>
+            <button class="btn-action" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);" onclick="window.EcosystemUI.exportTelemetryJson()">
+              <i class="fa-solid fa-download"></i> Export Telemetry JSON
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Bottom Left Desktop Navigation Instruction Pill -->
+    <div class="desktop-help-pill" id="desktop-controls-hint">
+      <span><i class="fa-solid fa-keyboard sub-cyan"></i> Desktop Controls:</span>
+      <span><span class="kbd-key">W</span><span class="kbd-key">A</span><span class="kbd-key">S</span><span class="kbd-key">D</span> Move</span>
+      <span><span class="kbd-key">Mouse</span> Look</span>
+      <span><span class="kbd-key">Left Click</span> Interact with 3D Objects</span>
+      <span><span class="kbd-key">ESC</span> Toggle UI</span>
+    </div>
+
+    <!-- Floating Dock (Visible on desktop & in-VR toggle) -->
+    <div class="vr-float-dock">
+      <button class="dock-btn" title="Toggle Fullscreen" onclick="window.EcosystemUI.toggleFullscreen()">
+        <i class="fa-solid fa-expand"></i>
+      </button>
+      <button class="dock-btn" title="Toggle In-VR HUD" onclick="window.EcosystemUI.toggleInVrHUD()">
+        <i class="fa-solid fa-gauge-high"></i>
+      </button>
+      <button class="dock-btn" title="Center Camera Rig" onclick="window.EcosystemUI.resetCameraPosition()">
+        <i class="fa-solid fa-crosshairs"></i>
+      </button>
+      <button class="dock-btn" title="Toggle 2D UI Overlay" onclick="window.EcosystemUI.toggleUIVisibility()">
+        <i class="fa-solid fa-eye-slash"></i>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODALS (CAMPAIGN CREATOR & CASHOUT)        -->
+  <!-- ========================================== -->
+
+  <!-- Modal 1: Create Advertiser Campaign -->
+  <div class="modal-backdrop" id="modal-campaign">
+    <div class="modal-dialog">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;"><i class="fa-solid fa-plus-circle sub-cyan"></i> Launch Spatial Campaign</h3>
+        <button style="background: transparent; border: none; color: var(--text-dim); font-size: 1.2rem; cursor: pointer;" onclick="window.EcosystemUI.closeModals()">&times;</button>
+      </div>
+
+      <form onsubmit="window.EcosystemEngine.handleCreateCampaign(event)">
+        <div class="form-group">
+          <label class="form-label">Brand / Organization Name</label>
+          <input type="text" class="form-input" id="cfg-brand-name" placeholder="e.g. Porsche Cars North America" required value="Porsche Motorsport XR">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Monetization Format</label>
+          <select class="form-select" id="cfg-campaign-type">
+            <option value="DOOH_BILLBOARD">Spatial Digital Billboard (vCPM - Verified Dwell)</option>
+            <option value="SHOWCASE_3D">Interactive 3D Product Pedestal (CPE - Cost Per Engagement)</option>
+            <option value="USABILITY_STUDY">Voluntary VR Usability Task (CPU - Cost Per Task)</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label">Escrow Budget ($ USD)</label>
+            <input type="number" step="10" class="form-input" id="cfg-budget" value="250" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bid Rate (vCPM or CPE)</label>
+            <input type="number" step="0.10" class="form-input" id="cfg-bid-rate" value="7.50" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Target Hardware Criteria</label>
+          <select class="form-select" id="cfg-target-device">
+            <option value="QUEST3S_AND_DESKTOP">Meta Quest 3S, Quest Pro & WebXR Desktop (All)</option>
+            <option value="STANDALONE_QUEST_ONLY">Standalone Quest 3S Only</option>
+            <option value="DESKTOP_PCVR">PCVR & High-End Desktop Only</option>
+          </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+          <button type="button" class="btn-action" style="background: rgba(255,255,255,0.08);" onclick="window.EcosystemUI.closeModals()">Cancel</button>
+          <button type="submit" class="btn-action"><i class="fa-solid fa-lock"></i> Fund Escrow & Launch</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Cashout Payout Request -->
+  <div class="modal-backdrop" id="modal-withdraw">
+    <div class="modal-dialog">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;"><i class="fa-solid fa-paper-plane sub-green"></i> Withdraw Earnings Vault</h3>
+        <button style="background: transparent; border: none; color: var(--text-dim); font-size: 1.2rem; cursor: pointer;" onclick="window.EcosystemUI.closeModals()">&times;</button>
+      </div>
+
+      <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 12px; padding: 14px; margin-bottom: 20px;">
+        <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Available for Instant Payout</div>
+        <div style="font-size: 1.7rem; font-weight: 800; color: var(--accent-green); font-family: 'JetBrains Mono', monospace;" id="modal-available-val">$14.8250</div>
+      </div>
+
+      <form onsubmit="window.EcosystemEngine.handleWithdrawRequest(event)">
+        <div class="form-group">
+          <label class="form-label">Withdrawal Destination</label>
+          <select class="form-select" id="with-method">
+            <option value="STRIPE_ACH">Stripe Connect (US / Global Direct Bank Deposit)</option>
+            <option value="PAYPAL">PayPal Instant Payout</option>
+            <option value="USDC">USDC (Base / Polygon Zero-Gas Stablecoin)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Account Identifier (IBAN / Email / Wallet Address)</label>
+          <input type="text" class="form-input" id="with-account" placeholder="e.g. user@verified-headset.org" required value="alex.quest3s@spatialnetwork.io">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Withdrawal Amount ($ USD)</label>
+          <input type="number" step="0.01" class="form-input" id="with-amount" min="5.00" value="14.82" required>
+        </div>
+
+        <div style="font-size: 0.75rem; color: var(--text-dim); line-height: 1.4; margin-bottom: 20px;">
+          * Demonstration Sandbox Notice: Simulated fiat payout will execute instantly and log an irreversible entry to your cryptographic ledger.
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn-action" style="background: rgba(255,255,255,0.08);" onclick="window.EcosystemUI.closeModals()">Cancel</button>
+          <button type="submit" class="btn-action" style="background: linear-gradient(135deg, #22c55e, #16a34a);"><i class="fa-solid fa-check"></i> Execute Disbursal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- CENTRAL JAVASCRIPT ARCHITECTURE                                -->
+  <!-- ============================================================== -->
+  <script>
+    /*
+     * AetherXR Central State & Business Logic Controller
+     * Implements two-sided economic marketplace:
+     * - Headset Owners earn 70% share of attributed vCPM, CPE, and CPU bounties.
+     * - Corporate Sponsors fund escrow pools and receive verified spatial attention.
+     * - Protocol retains 30% margin to sustain low-latency WebXR infrastructure.
+     */
+
+    window.EcosystemState = {
+      sessionActive: false,
+      sessionStartTime: null,
+      sessionElapsedSeconds: 0,
+      sessionEarned: 0.0000,
+      
+      // Balances
+      confirmedBalance: 14.8250,
+      pendingBalance: 3.2500,
+      lifetimeEarned: 148.6000,
+      paidOutBalance: 130.5000,
+
+      // Yield & Commission Parameters
+      currentYieldRatePerHour: 0.38, // base ambient passive ($/hr)
+      protocolSplitUser: 0.70,       // 70% to headset owner
+      protocolSplitPlatform: 0.30,   // 30% platform margin
+
+      // User Channel Consent Preferences
+      channels: {
+        billboard: true,
+        showcase: true,
+        usability: true,
+        ambient: true
+      },
+
+      // Corporate Campaigns
+      campaigns: [
+        {
+          id: 'CAMP-LUCID-01',
+          brand: 'Lucid Motors',
+          format: 'DOOH Billboard (vCPM)',
+          pricing: '$7.20 vCPM',
+          budget: 500.00,
+          impressions: 18240,
+          spend: 131.33,
+          status: 'ACTIVE'
+        },
+        {
+          id: 'CAMP-SONY-02',
+          brand: 'Sony Spatial Audio',
+          format: 'DOOH Billboard (vCPM)',
+          pricing: '$6.80 vCPM',
+          budget: 400.00,
+          impressions: 14120,
+          spend: 96.02,
+          status: 'ACTIVE'
+        },
+        {
+          id: 'CAMP-AERO-03',
+          brand: 'AeroSpace Robotics',
+          format: '3D Product Pedestal (CPE)',
+          pricing: '$0.15 / Config',
+          budget: 650.00,
+          impressions: 7490,
+          spend: 184.20,
+          status: 'ACTIVE'
+        },
+        {
+          id: 'CAMP-META-04',
+          brand: 'Quest Spatial Dev Lab',
+          format: 'Usability Task (CPU)',
+          pricing: '$1.25 / Task',
+          budget: 350.00,
+          impressions: 3000,
+          spend: 70.95,
+          status: 'ACTIVE'
+        }
+      ],
+
+      // Historical Transactions Ledger
+      transactions: [
+        {
+          timestamp: '2026-11-19 14:15:02',
+          hash: '0x8f2a...c391',
+          source: 'Lucid Motors vCPM Dwell (5.8s)',
+          metric: 'Central 60° Frustum',
+          gross: 0.0042,
+          fee: 0.0013,
+          net: 0.0029,
+          status: 'CONFIRMED'
+        },
+        {
+          timestamp: '2026-11-19 14:02:18',
+          hash: '0x3c7e...b924',
+          source: 'AeroSpace 3D Drone Interaction',
+          metric: 'Color Customizer Touch',
+          gross: 0.1500,
+          fee: 0.0450,
+          net: 0.1050,
+          status: 'CONFIRMED'
+        },
+        {
+          timestamp: '2026-11-19 13:45:50',
+          hash: '0x71a4...d019',
+          source: 'Sony Spatial Audio Dwell (4.1s)',
+          metric: 'Spatial Ray Intersection',
+          gross: 0.0038,
+          fee: 0.0011,
+          net: 0.0027,
+          status: 'CONFIRMED'
+        },
+        {
+          timestamp: '2026-11-19 12:30:10',
+          hash: '0x99b1...41ee',
+          source: 'Quest Dev Usability Study',
+          metric: 'Latency Benchmark Task #14',
+          gross: 1.2500,
+          fee: 0.3750,
+          net: 0.8750,
+          status: 'CONFIRMED'
+        }
+      ],
+
+      // Chart Instances
+      advChartInstance: null,
+      adminChartInstance: null
+    };
+
+    /*
+     * Central Monetization & Real-Time Earning Engine
+     */
+    window.EcosystemEngine = {
+      sessionTimerInterval: null,
+
+      init: function () {
+        this.renderCampaignsTable();
+        this.renderTransactionsTable();
+        this.setupKeyboardShortcuts();
+        this.initCharts();
+        
+        // Listen to visibility changes (anti-fraud: pause earning if user minimizes or switches tab)
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden && window.EcosystemState.sessionActive) {
+            window.EcosystemEngine.logActivity('[FRAUD-GUARD] Tab minimized/hidden. Session yield suspended.', 'warning');
+          } else if (!document.hidden && window.EcosystemState.sessionActive) {
+            window.EcosystemEngine.logActivity('[FRAUD-GUARD] Window focus restored. Verified attention resuming.', 'audit-pass');
+          }
+        });
+
+        // Usability Task Button Handler
+        var usabilityBtn = document.querySelector('#btn-start-usability');
+        if (usabilityBtn) {
+          usabilityBtn.addEventListener('click', () => {
+            if (window.EcosystemState.sessionActive) {
+              window.EcosystemEngine.completeUsabilityTask();
+            } else {
+              alert('Please click "Start Earning Session" first to participate in paid usability benchmarks.');
+            }
+          });
+        }
+      },
+
+      toggleSession: function () {
+        if (!window.EcosystemState.sessionActive) {
+          this.startSession();
+        } else {
+          this.stopSession();
+        }
+      },
+
+      startSession: function () {
+        window.EcosystemState.sessionActive = true;
+        window.EcosystemState.sessionStartTime = Date.now();
+        
+        // Update UI Pills & Buttons
+        var badge = document.getElementById('session-status-badge');
+        badge.className = 'session-indicator-pill active';
+        document.getElementById('session-status-text').innerText = 'EARNING ACTIVE';
+
+        var btn = document.getElementById('main-session-toggle-btn');
+        btn.className = 'primary-toggle-btn btn-stop';
+        btn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause Earning Session';
+
+        this.logActivity('[SESSION STARTED] WebXR Spatial Attention Mining Initiated.', 'audit-pass');
+
+        // Start heartbeat loop (every 1s)
+        this.sessionTimerInterval = setInterval(() => {
+          this.tickSession();
+        }, 1000);
+      },
+
+      stopSession: function () {
+        window.EcosystemState.sessionActive = false;
+        clearInterval(this.sessionTimerInterval);
+
+        var badge = document.getElementById('session-status-badge');
+        badge.className = 'session-indicator-pill';
+        document.getElementById('session-status-text').innerText = 'SESSION PAUSED';
+
+        var btn = document.getElementById('main-session-toggle-btn');
+        btn.className = 'primary-toggle-btn';
+        btn.innerHTML = '<i class="fa-solid fa-play"></i> Resume Earning Session';
+
+        // Move session earnings to pending audit balance
+        if (window.EcosystemState.sessionEarned > 0) {
+          window.EcosystemState.pendingBalance += window.EcosystemState.sessionEarned;
+          window.EcosystemState.lifetimeEarned += window.EcosystemState.sessionEarned;
+          window.EcosystemState.sessionEarned = 0;
+          this.updateMetricsUI();
+        }
+
+        this.logActivity('[SESSION PAUSED] Active session yield buffered into audit queue.', 'warning');
+      },
+
+      tickSession: function () {
+        // Fraud Check: If window is hidden or headset idle > 25s, do not accrue yield
+        if (document.hidden || window.SpatialTelemetry.isHeadsetIdle) {
+          document.getElementById('session-quality-metric').innerHTML = 
+            'Session Quality Score: <strong style="color: var(--accent-red);">0% (IDLE / NO VESTIBULAR MOTION)</strong>';
+          return;
+        }
+
+        document.getElementById('session-quality-metric').innerHTML = 
+          'Session Quality Score: <strong style="color: var(--accent-green);">98% (ACTIVE GAZE/FRUSTUM VERIFIED)</strong>';
+
+        window.EcosystemState.sessionElapsedSeconds++;
+
+        // Base passive ambient yield accrual: (yieldRatePerHour / 3600)
+        var ambientPerSec = (window.EcosystemState.currentYieldRatePerHour / 3600);
+        window.EcosystemState.sessionEarned += ambientPerSec;
+
+        this.updateMetricsUI();
+      },
+
+      // Attributed Earning Event: Spatial Billboard Dwell (vCPM)
+      recordVerifiedDwell: function (campaignId, campaignName, seconds, rateCPM) {
+        if (!window.EcosystemState.channels.billboard) return;
+
+        // Calculate gross value: (rateCPM / 1000) * (seconds / 5.0 normalized)
+        var grossValue = (rateCPM / 1000) * Math.min(seconds / 3.0, 2.5);
+        var netUser = grossValue * window.EcosystemState.protocolSplitUser;
+        var platformFee = grossValue * window.EcosystemState.protocolSplitPlatform;
+
+        window.EcosystemState.sessionEarned += netUser;
+        window.SpatialTelemetry.totalVerifiedDwells++;
+
+        // Deduct from campaign budget
+        this.chargeCampaign(campaignId, grossValue);
+
+        // Record to ledger
+        var hash = '0x' + Math.random().toString(16).substring(2, 6) + '...' + Math.random().toString(16).substring(2, 6);
+        this.addLedgerEntry(campaignName + ' Dwell (' + seconds.toFixed(1) + 's)', '60° Viewport Match', grossValue, platformFee, netUser, hash);
+
+        this.logActivity('[vCPM VERIFIED] ' + campaignName + ' Dwell (' + seconds.toFixed(1) + 's) -> +$' + netUser.toFixed(4) + ' earned', 'audit-pass');
+        this.updateMetricsUI();
+      },
+
+      // Attributed Earning Event: 3D Product Interactive Engagement (CPE)
+      recordInteraction: function (campaignId, productName, actionDescription, rewardPerAction) {
+        if (!window.EcosystemState.channels.showcase) return;
+
+        var grossValue = rewardPerAction;
+        var netUser = grossValue * window.EcosystemState.protocolSplitUser;
+        var platformFee = grossValue * window.EcosystemState.protocolSplitPlatform;
+
+        window.EcosystemState.sessionEarned += netUser;
+        window.SpatialTelemetry.interactiveActions++;
+
+        this.chargeCampaign(campaignId, grossValue);
+
+        var hash = '0x' + Math.random().toString(16).substring(2, 6) + '...' + Math.random().toString(16).substring(2, 6);
+        this.addLedgerEntry(productName + ' Interaction', actionDescription, grossValue, platformFee, netUser, hash);
+
+        this.logActivity('[CPE VERIFIED] ' + productName + ' (' + actionDescription + ') -> +$' + netUser.toFixed(4) + ' credited', 'audit-pass');
+        this.updateMetricsUI();
+      },
+
+      // Attributed Earning Event: Usability Benchmark Study (CPU)
+      completeUsabilityTask: function () {
+        var grossValue = 1.25;
+        var netUser = grossValue * window.EcosystemState.protocolSplitUser; // $0.875
+        var platformFee = grossValue * window.EcosystemState.protocolSplitPlatform;
+
+        window.EcosystemState.sessionEarned += netUser;
+
+        this.chargeCampaign('CAMP-META-04', grossValue);
+
+        var hash = '0x' + Math.random().toString(16).substring(2, 6) + '...' + Math.random().toString(16).substring(2, 6);
+        this.addLedgerEntry('Meta Quest Spatial Benchmark', 'Task #102 Latency Baseline', grossValue, platformFee, netUser, hash);
+
+        this.logActivity('[CPU VERIFIED] Usability study task finalized -> +$' + netUser.toFixed(4) + ' credited to vault', 'audit-pass');
+        this.updateMetricsUI();
+        alert('Usability Task Completed! You earned +$' + netUser.toFixed(2) + ' net.');
+      },
+
+      chargeCampaign: function (campaignId, grossAmount) {
+        var camp = window.EcosystemState.campaigns.find(c => c.id === campaignId);
+        if (camp) {
+          camp.spend += grossAmount;
+          camp.impressions++;
+          this.renderCampaignsTable();
+        }
+      },
+
+      addLedgerEntry: function (source, metric, gross, fee, net, hash) {
+        var dateStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+        window.EcosystemState.transactions.unshift({
+          timestamp: dateStr,
+          hash: hash,
+          source: source,
+          metric: metric,
+          gross: gross,
+          fee: fee,
+          net: net,
+          status: 'CONFIRMED'
+        });
+        if (window.EcosystemState.transactions.length > 25) {
+          window.EcosystemState.transactions.pop();
+        }
+        this.renderTransactionsTable();
+      },
+
+      updateChannelPref: function () {
+        window.EcosystemState.channels.billboard = document.getElementById('toggle-ch-billboard').checked;
+        window.EcosystemState.channels.showcase = document.getElementById('toggle-ch-showcase').checked;
+        window.EcosystemState.channels.usability = document.getElementById('toggle-ch-usability').checked;
+        window.EcosystemState.channels.ambient = document.getElementById('toggle-ch-ambient').checked;
+
+        // Recalculate estimated dynamic yield rate
+        var baseRate = 0;
+        if (window.EcosystemState.channels.ambient) baseRate += 0.20;
+        if (window.EcosystemState.channels.billboard) baseRate += 0.18;
+        if (window.EcosystemState.channels.showcase) baseRate += 0.40;
+        if (window.EcosystemState.channels.usability) baseRate += 0.65;
+        
+        window.EcosystemState.currentYieldRatePerHour = baseRate;
+        document.getElementById('val-yield-rate').innerHTML = '$' + baseRate.toFixed(2) + '<span style="font-size: 0.95rem; color: var(--text-dim);">/hr</span>';
+      },
+
+      updateMetricsUI: function () {
+        // Format elapsed time HH:MM:SS
+        var s = window.EcosystemState.sessionElapsedSeconds;
+        var hrs = Math.floor(s / 3600);
+        var mins = Math.floor((s % 3600) / 60);
+        var secs = s % 60;
+        var timeStr = 
+          (hrs < 10 ? '0' : '') + hrs + ':' +
+          (mins < 10 ? '0' : '') + mins + ':' +
+          (secs < 10 ? '0' : '') + secs;
+
+        document.getElementById('val-session-time').innerHTML = '<i class="fa-regular fa-clock"></i> ' + timeStr + ' elapsed';
+        document.getElementById('val-session-earned').innerText = '$' + window.EcosystemState.sessionEarned.toFixed(4);
+        document.getElementById('val-confirmed-balance').innerText = '$' + window.EcosystemState.confirmedBalance.toFixed(4);
+        document.getElementById('val-pending-balance').innerText = '$' + window.EcosystemState.pendingBalance.toFixed(4);
+        document.getElementById('val-lifetime-earned').innerText = '$' + (window.EcosystemState.lifetimeEarned + window.EcosystemState.sessionEarned).toFixed(2);
+
+        // Wallet Tab Values
+        document.getElementById('wallet-settled-balance').innerText = '$' + window.EcosystemState.confirmedBalance.toFixed(2);
+        document.getElementById('wallet-pending-balance').innerText = '$' + (window.EcosystemState.pendingBalance + window.EcosystemState.sessionEarned).toFixed(2);
+        document.getElementById('modal-available-val').innerText = '$' + window.EcosystemState.confirmedBalance.toFixed(4);
+
+        // In-VR Floating HUD Elements
+        var invrBalance = document.getElementById('invr-hud-balance');
+        if (invrBalance) {
+          invrBalance.setAttribute('value', '$' + (window.EcosystemState.confirmedBalance + window.EcosystemState.sessionEarned).toFixed(4));
+        }
+      },
+
+      logActivity: function (msg, cssClass) {
+        var box = document.getElementById('live-activity-stream');
+        if (!box) return;
+        var entry = document.createElement('div');
+        entry.className = 'stream-entry ' + (cssClass || '');
+        entry.innerHTML = '<span>' + msg + '</span><span class="sub-cyan">' + new Date().toLocaleTimeString() + '</span>';
+        box.prepend(entry);
+        if (box.children.length > 30) {
+          box.removeChild(box.lastChild);
+        }
+      },
+
+      renderCampaignsTable: function () {
+        var tbody = document.getElementById('campaigns-table-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        window.EcosystemState.campaigns.forEach(c => {
+          var tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--primary-cyan);">${c.id}</td>
+            <td style="font-weight: 600;">${c.brand}</td>
+            <td><span class="badge-pill badge-completed">${c.format}</span></td>
+            <td style="font-family: 'JetBrains Mono', monospace;">${c.pricing}</td>
+            <td style="font-family: 'JetBrains Mono', monospace;">$${c.budget.toFixed(2)}</td>
+            <td style="font-family: 'JetBrains Mono', monospace;">${c.impressions.toLocaleString()}</td>
+            <td style="font-family: 'JetBrains Mono', monospace; color: var(--accent-green);">$${c.spend.toFixed(2)}</td>
+            <td><span class="badge-pill badge-live">${c.status}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      renderTransactionsTable: function () {
+        var tbody = document.getElementById('transactions-table-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        window.EcosystemState.transactions.forEach(t => {
+          var tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="font-size: 0.76rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">${t.timestamp}</td>
+            <td style="font-family: 'JetBrains Mono', monospace; color: var(--accent-purple);">${t.hash}</td>
+            <td style="font-weight: 600;">${t.source}</td>
+            <td style="font-size: 0.76rem; color: var(--text-muted);">${t.metric}</td>
+            <td style="font-family: 'JetBrains Mono', monospace;">$${t.gross.toFixed(4)}</td>
+            <td style="font-family: 'JetBrains Mono', monospace; color: var(--accent-red);">-$${t.fee.toFixed(4)}</td>
+            <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent-green);">+$${t.net.toFixed(4)}</td>
+            <td><span class="badge-pill badge-live">${t.status}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      handleCreateCampaign: function (e) {
+        e.preventDefault();
+        var brand = document.getElementById('cfg-brand-name').value;
+        var type = document.getElementById('cfg-campaign-type').value;
+        var budget = parseFloat(document.getElementById('cfg-budget').value);
+        var bid = parseFloat(document.getElementById('cfg-bid-rate').value);
+
+        var newCamp = {
+          id: 'CAMP-USER-' + Math.floor(100 + Math.random() * 900),
+          brand: brand,
+          format: type.replace('_', ' '),
+          pricing: '$' + bid.toFixed(2) + ' / Unit',
+          budget: budget,
+          impressions: 0,
+          spend: 0.00,
+          status: 'ACTIVE'
+        };
+
+        window.EcosystemState.campaigns.unshift(newCamp);
+        this.renderCampaignsTable();
+        window.EcosystemUI.closeModals();
+        alert('Campaign "' + brand + '" successfully funded and deployed across the WebXR spatial billboard network!');
+      },
+
+      handleWithdrawRequest: function (e) {
+        e.preventDefault();
+        var amt = parseFloat(document.getElementById('with-amount').value);
+        if (amt > window.EcosystemState.confirmedBalance) {
+          alert('Requested withdrawal amount exceeds confirmed settled balance.');
+          return;
+        }
+
+        window.EcosystemState.confirmedBalance -= amt;
+        window.EcosystemState.paidOutBalance += amt;
+
+        var hash = '0x' + Math.random().toString(16).substring(2, 6) + '...' + Math.random().toString(16).substring(2, 6);
+        this.addLedgerEntry('Disbursal to ' + document.getElementById('with-method').value, 'Direct Bank Payout', amt, 0, amt, hash);
+
+        this.updateMetricsUI();
+        window.EcosystemUI.closeModals();
+        alert('Disbursal executed! $' + amt.toFixed(2) + ' has been transferred to your external payment endpoint.');
+      },
+
+      runSystemAudit: function () {
+        this.logActivity('[AUDIT] Running full cryptographic ledger & fraud consensus sweep...', 'audit-pass');
+        setTimeout(() => {
+          alert('Integrity Audit Complete: 0 sybil clusters detected. 100% of escrow reserves cryptographically accounted for.');
+        }, 600);
+      },
+
+      setupKeyboardShortcuts: function () {
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            window.EcosystemUI.toggleUIVisibility();
+          }
+        });
+      },
+
+      initCharts: function () {
+        // Chart 1: Advertiser Dwell Distribution
+        var ctx1 = document.getElementById('advertiserChart');
+        if (ctx1) {
+          window.EcosystemState.advChartInstance = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+              labels: ['0-2s (Bounced)', '2-4s (Casual)', '4-6s (Qualified vCPM)', '6-10s (High-Intent)', '>10s (Engaged)'],
+              datasets: [{
+                label: 'Verified Viewport Impressions',
+                data: [1200, 4800, 18500, 12200, 6150],
+                backgroundColor: 'rgba(56, 189, 248, 0.6)',
+                borderColor: '#38bdf8',
+                borderWidth: 1,
+                borderRadius: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
+                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+              }
+            }
+          });
+        }
+
+        // Chart 2: Admin Revenue Distribution
+        var ctx2 = document.getElementById('adminRevenueChart');
+        if (ctx2) {
+          window.EcosystemState.adminChartInstance = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+              labels: ['Headset Owners (70% Yield)', 'Platform Protocol (30% Margin)'],
+              datasets: [{
+                data: [70, 30],
+                backgroundColor: ['#22c55e', '#38bdf8'],
+                borderColor: '#0f172a',
+                borderWidth: 2
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1' } } }
+            }
+          });
+        }
+      }
+    };
+
+    /*
+     * UI & WebXR Navigation Controller
+     */
+    window.EcosystemUI = {
+      activeTabId: 'tab-owner',
+
+      switchTab: function (tabId) {
+        this.activeTabId = tabId;
+
+        // Update nav buttons
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        if (tabId === 'tab-owner') document.getElementById('btn-tab-owner').classList.add('active');
+        if (tabId === 'tab-advertiser') document.getElementById('btn-tab-advertiser').classList.add('active');
+        if (tabId === 'tab-admin') document.getElementById('btn-tab-admin').classList.add('active');
+        if (tabId === 'tab-wallet') document.getElementById('btn-tab-wallet').classList.add('active');
+        if (tabId === 'tab-privacy') document.getElementById('btn-tab-privacy').classList.add('active');
+
+        // Update Tab Panes
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active-pane'));
+        var targetPane = document.getElementById(tabId);
+        if (targetPane) targetPane.classList.add('active-pane');
+      },
+
+      toggleVRMode: function () {
+        var sceneEl = document.querySelector('a-scene');
+        if (sceneEl) {
+          if (sceneEl.is('vr-mode')) {
+            sceneEl.exitVR();
+            document.getElementById('btn-vr-label').innerText = 'Immerse 3D View';
+          } else {
+            sceneEl.enterVR();
+            document.getElementById('btn-vr-label').innerText = 'Exit VR';
+            this.toggleUIVisibility(false); // Hide 2D UI when entering immersive VR
+            this.toggleInVrHUD(true);       // Enable 3D Floating HUD inside VR
+          }
+        }
+      },
+
+      toggleUIVisibility: function (forceState) {
+        var overlay = document.getElementById('ui-overlay');
+        if (forceState !== undefined) {
+          if (forceState) {
+            overlay.classList.remove('hidden-view');
+          } else {
+            overlay.classList.add('hidden-view');
+          }
+        } else {
+          overlay.classList.toggle('hidden-view');
+        }
+      },
+
+      toggleInVrHUD: function (forceState) {
+        var hud = document.getElementById('invr-hud');
+        if (hud) {
+          var current = hud.getAttribute('visible');
+          var next = forceState !== undefined ? forceState : !current;
+          hud.setAttribute('visible', next);
+        }
+      },
+
+      resetCameraPosition: function () {
+        var rig = document.getElementById('camera-rig');
+        if (rig) {
+          rig.setAttribute('position', '0 0 4');
+          rig.setAttribute('rotation', '0 0 0');
+        }
+      },
+
+      toggleFullscreen: function () {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(err => {});
+        } else {
+          document.exitFullscreen();
+        }
+      },
+
+      openCreateCampaignModal: function () {
+        document.getElementById('modal-campaign').classList.add('open');
+      },
+
+      openWithdrawModal: function () {
+        document.getElementById('modal-withdraw').classList.add('open');
+      },
+
+      closeModals: function () {
+        document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
+      },
+
+      exportTelemetryJson: function () {
+        var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.EcosystemState, null, 2));
+        var downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "AetherXR_Telemetry_Audit_" + Date.now() + ".json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+      }
+    };
+
+    // Bootstrap after DOM ready
+    window.addEventListener('DOMContentLoaded', () => {
+      window.EcosystemEngine.init();
+    });
+  </script>
+</body>
+</html>
